@@ -6937,3 +6937,42 @@ label.logo-upload {
 		font-size: 12px;
 	}
 }
+
+/* Ensure the sidebar is hidden on mobile screens */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    left: -250px; /* Hide sidebar offscreen */
+    transition: left 0.3s ease-in-out;
+  }
+
+  .sidebar.active {
+    left: 0; /* Show the sidebar when it's active */
+  }
+
+  /* The mobile show button (for opening the sidebar) */
+  #mobile_btn_open {
+    display: block;
+  }
+
+  /* Hide sidebar items when the sidebar is offscreen */
+  .sidebar-contents {
+    visibility: hidden;
+  }
+
+  .sidebar.active .sidebar-contents {
+    visibility: visible;
+  }
+}
+
+/* Show the mobile menu toggle button on mobile screens */
+#mobile_btn_open {
+  display: none;
+}
+
+/* Customize the close button */
+#mobile_btn_close {
+  cursor: pointer;
+  padding: 10px;
+}
+

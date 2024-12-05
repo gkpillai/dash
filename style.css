@@ -6937,3 +6937,7 @@ label.logo-upload {
 		font-size: 12px;
 	}
 }
+.menu-item.active {
+  background-color: #f4f4f4;
+  color: #333;
+}

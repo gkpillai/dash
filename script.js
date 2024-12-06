@@ -3,7 +3,7 @@
 	var $wrapper = $('.main-wrapper');
 	var $pageWrapper = $('.page-wrapper');
 	var $slimScrolls = $('.slimscroll');
-	//feather.replace();
+	feather.replace();
 	var Sidemenu = function() {
 		this.$menuItem = $('#sidebar-menu a');
 	};

@@ -46,21 +46,23 @@ $(document).ready(function () {
       monthDropdown.append(`<option value="${month}">${month}</option>`);
     });
 
-// Append dropdowns to controls and initialize Select2
-$('#controls').empty(); // Clear any existing content
+  // Clear any existing content in the controls container
+$('#controls').empty();
+
+// Append dropdowns to controls container
 $('#controls')
-  .append('<div class="dropdown-container"><label for="department-select">Department:</label></div>')
-  .append('<div class="dropdown-container"><label for="month-select">Month:</label></div>');
+  .append('<div class="dropdown-container"><label for="department-select">Department:</label><select id="department-select" class="dropdown"><option value="all">All Departments</option></select></div>')
+  .append('<div class="dropdown-container"><label for="month-select">Month:</label><select id="month-select" class="dropdown"><option value="all">All Months</option></select></div>');
 
-$('.dropdown-container').eq(0).append(departmentDropdown);
-$('.dropdown-container').eq(1).append(monthDropdown);
-
-
-// Initialize Select2 for better UI
-$('.dropdown').select2({
-  width: '200px', // Adjust dropdown width
-  placeholder: "Select an option",
+// Append options for department and month
+departments.forEach(department => {
+  $('#department-select').append(`<option value="${department}">${department}</option>`);
 });
+
+sortedMonths.forEach(month => {
+  $('#month-select').append(`<option value="${month}">${month}</option>`);
+});
+
 
     // Function to render the chart
     const renderChart = (selectedDepartment, selectedMonth) => {
@@ -155,7 +157,7 @@ $('.dropdown').select2({
           max: 100,
           min: 0,
         },
-        colors: ["#008FFB", "#00E396", "#FEB019", "#FF4560", "#775DD0"],
+        colors: ['#7638ff', '#ff737b', '#fda600', '#1ec1b0', '#8e44ad', '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#34495e', '#1abc9c'],
         tooltip: {
           y: {
             formatter: function (val) {

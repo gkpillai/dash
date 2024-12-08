@@ -47,13 +47,14 @@ $(document).ready(function () {
     });
 
 // Append dropdowns to controls and initialize Select2
+$('#controls').empty(); // Clear any existing content
 $('#controls')
   .append('<div class="dropdown-container"><label for="department-select">Department:</label></div>')
   .append('<div class="dropdown-container"><label for="month-select">Month:</label></div>');
 
-// Append the dropdowns inside the container
 $('.dropdown-container').eq(0).append(departmentDropdown);
 $('.dropdown-container').eq(1).append(monthDropdown);
+
 
 // Initialize Select2 for better UI
 $('.dropdown').select2({

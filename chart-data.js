@@ -132,7 +132,7 @@ sortedMonths.forEach(month => {
         plotOptions: {
           bar: {
             horizontal: false,
-            columnWidth: "50%",
+            columnWidth: "80%",
             //endingShape: "rounded",
           },
         },
@@ -319,7 +319,7 @@ $(document).ready(function () {
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: "50%",
+        columnWidth: "80%",
       },
     },
     dataLabels: {

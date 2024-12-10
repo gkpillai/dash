@@ -764,4 +764,61 @@ function createChart(data, selectedMonth) {
   chart.render(); // Render the donut chart
 }
 
+$(document).ready(function () {
+  google.script.run.withSuccessHandler(function (data) {
+    console.log("Received data:", data);
+
+    var months = data.months;
+    var expenseData = data.expenses;
+
+    if (months.length > 0) {
+      // Populate the month dropdown with formatted months
+      months.forEach(function (month) {
+        $('#monthSelector1').append(new Option(month, month)); // Use month as both value and text
+      });
+
+      // Set the default selection to the last month
+      var selectedMonth = months[months.length - 1];
+      $('#monthSelector1').val(selectedMonth);
+
+      // Display expenses for the default selected month
+      displayExpenses(expenseData, selectedMonth);
+    } else {
+      console.error("No months available to display.");
+    }
+
+    // Change event for updating the table when a new month is selected
+    $('#monthSelector1').change(function () {
+      var selectedMonth = $(this).val();
+      displayExpenses(expenseData, selectedMonth);
+    });
+  }).getMonthlyExpenseData(); // Call the Apps Script function
+});
+
+      // Function to display expenses in a table format
+      function displayExpenses(expenseData, selectedMonth) {
+        var expenses = expenseData[selectedMonth];
+        if (!expenses) {
+          console.error("No data available for the selected month:", selectedMonth);
+          return;
+        }
+
+        // Update the table heading
+        $('#selectedMonth').text(`Expense Details for ${selectedMonth}`);
+
+        // Populate the table
+        var tableBody = $('#expenseTable tbody');
+        tableBody.empty(); // Clear existing data
+
+        for (var label in expenses) {
+          var value = expenses[label];
+          tableBody.append(`
+            <tr>
+              <td>${label}</td>
+              <td>${value}</td>
+            </tr>
+          `);
+        }
+      }
+
 

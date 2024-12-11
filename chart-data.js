@@ -1,142 +1,5 @@
 'use strict';
 
-$(document).ready(function() {
-
-  var chart; // Declare chart globally
-
-  google.script.run.withSuccessHandler(function(data) {
-    console.log("Received data:", data); // Log received data
-    
-    // Check if the dropdown exists
-    console.log($('#monthSelector')); // Log to ensure the dropdown is accessible
-
-    // Populate the month dropdown
-    if (data.months && data.months.length > 0) {
-      data.months.forEach(function(month) {
-        $('#monthSelector').append(new Option(month, month));
-      });
-
-      // Set the selected month to the last month in the data
-      var selectedMonth = data.months[data.months.length - 1]; // Default to the last month
-      $('#monthSelector').val(selectedMonth); // Set the dropdown value to the last month
-
-      // Create the chart for the last month
-      createChart(data, selectedMonth); // Create chart comparing Revenue vs Gross Earnings
-    } else {
-      console.error("No months available in data.");
-    }
-
-    // Event listener for dropdown change
-    $('#monthSelector').change(function() {
-      var selectedMonth = $(this).val(); // Get the selected month
-      createChart(data, selectedMonth); // Recreate the chart with the new month data
-    });
-
-  }).getEarningsVsRevenueData(); // Fetch data from Apps Script
-});
-
-// Function to create the chart
-function createChart(data, selectedMonth) {
-  console.log("Creating chart for:", selectedMonth);
-
-  // Destroy the old chart if it exists
-  if (chart && chart.destroy) {
-    chart.destroy();
-  }
-
-  var monthIndex = data.months.indexOf(selectedMonth);
-  if (monthIndex === -1) return; // Return if month not found
-
-  var earnings = data.earnings[monthIndex];
-  var revenue = data.revenues[monthIndex]; // Get the revenue for the selected month
-
-  var grossEarningsPercentage = 0; // Initialize grossEarningsPercentage
-  var grossEarningsPerPaxNight = 0; // Initialize grossEarningsPerPaxNight
-
-  if (revenue > 0) {
-    grossEarningsPercentage = (earnings / revenue) * 100; // Calculate earnings as a percentage of revenue
-  }
-
-  var paxGuestNights = data.paxGuestNights[monthIndex];
-  if (paxGuestNights > 0) {
-    grossEarningsPerPaxNight = earnings / paxGuestNights; // Calculate gross earnings per Pax Guest Night
-  }
-
-  // Ensure both earnings and percentage are valid numbers
-  if (isNaN(earnings) || isNaN(grossEarningsPercentage)) {
-    console.error(`Invalid data for ${selectedMonth}: Earnings = ${earnings}, Gross Payroll Percentage = ${grossEarningsPercentage}`);
-    return; // Exit if data is invalid
-  }
-
-  // Display the Gross Earnings per Pax Guest Night figure below the chart
-  $('#paxGuestNightLabel').text(`Gross Payroll per Pax Guest Night: ${grossEarningsPerPaxNight.toFixed(2)}`);
-
-  // Chart options for Donut chart
-  var options = {
-    chart: {
-      type: 'donut', // Change to 'donut' for donut chart
-      height: '400px', // Set fixed height for chart
-      width: '100%', // Set width to 100% of the parent container
-    },
-    series: [grossEarningsPercentage, 100 - grossEarningsPercentage], // Data for the donut chart (percentage split)
-    labels: [
-      `${selectedMonth} Gross Payroll`, 
-      `${selectedMonth} Remaining Revenue`
-    ],
-    title: {
-      text: `Gross Payroll vs Revenue for ${selectedMonth}`,
-      align: 'center', // Center the title
-    },
-    colors: [
-      '#7638ff', '#ff737b', '#fda600', '#1ec1b0', '#8e44ad', 
-      '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
-      '#34495e', '#1abc9c'
-    ], // Updated colors
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '50%', // Make it a donut by setting size
-        },
-        legend: {
-          position: 'bottom', // Set legend at the bottom of the chart
-        }
-      }
-    },
-    responsive: [
-      {
-        breakpoint: 1024, // Adjust the chart size for medium screens
-        options: {
-          chart: {
-            width: '80%' // Make chart width smaller for medium screens
-          }
-        }
-      },
-      {
-        breakpoint: 480, // Adjust the chart size for mobile screens
-        options: {
-          chart: {
-            width: '100%' // Full-width for smaller screens
-          },
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }
-    ],
-    legend: {
-      position: 'bottom', // Set legend to bottom for all screen sizes
-      offsetX: 0, // Adjust position horizontally if necessary
-      offsetY: 0, // Adjust position vertically if necessary
-      labels: {
-        useSeriesColors: true // Ensure series colors are used in the legend
-      }
-    }
-  };
-
-  // Create and render the new chart
-  chart = new ApexCharts(document.querySelector("#revenue-chart"), options);
-  chart.render(); // Render the donut chart
-}
 
 // Bar Chart Workforce Percentage
 
@@ -968,4 +831,120 @@ $(document).ready(function () {
 
 // Pie Chart for Payroll Expenses vs Revenue
 
+$(document).ready(function () {
+  var chart; // Declare chart variable globally to manage the chart instance
+
+  // Fetch the data from Google Apps Script (adjust the script function call as needed)
+  google.script.run.withSuccessHandler(function (data) {
+    console.log("Received data:", data); // Check the received data
+
+    var months = data.months;
+    var revenues = data.revenues;
+    var totalPayrollExpensesIncludingB56 = data.totalPayrollExpensesIncludingB56; // Use this field
+    var employeeCounts = data.employeeCounts; // Employee counts per month
+
+    // Optionally populate the month selector dropdown
+    if (months.length > 0) {
+      months.forEach(function (month) {
+        $('#monthSelector3').append(new Option(month, month));
+      });
+
+      // Default to the last month in the list
+      var lastMonth = months[months.length - 1];
+      $('#monthSelector3').val(lastMonth);
+
+      // Initialize the header and chart with the last month's data
+      var lastIndex = months.length - 1;
+      updateHeader(employeeCounts[lastIndex], totalPayrollExpensesIncludingB56[lastIndex]);
+      renderPieChart(totalPayrollExpensesIncludingB56[lastIndex], revenues[lastIndex]);
+    }
+
+    // Function to update the header with total employee count, total payroll expenses, and cost per employee
+    function updateHeader(employeeCount, totalPayrollExpensesIncludingB56) {
+      employeeCount = employeeCount || 0;
+      totalPayrollExpensesIncludingB56 = totalPayrollExpensesIncludingB56 || 0;
+
+      // Calculate cost per employee
+      var costPerEmployee = employeeCount > 0 
+        ? (totalPayrollExpensesIncludingB56 / employeeCount).toFixed(2)
+        : 0;
+
+      // Update the header
+      $('#header').html(`
+        <p style="font-size:14px; padding-top:10px; font-weight:bold;">Total Employee Count: ${employeeCount} I   Total Payroll Expenses: ${totalPayrollExpensesIncludingB56.toLocaleString()}</p>
+        <p style="font-size:14px; padding-bottom:10px; font-weight:bold;">Cost Per Employee: ${costPerEmployee}</p>
+      `);
+    }
+
+    // Function to render the pie chart
+    function renderPieChart(payrollExpensesIncludingB56, revenueData) {
+      // Validate and ensure data integrity
+      payrollExpensesIncludingB56 = payrollExpensesIncludingB56 || 0;
+      revenueData = revenueData || 1; // Prevent division by zero
+
+      if (isNaN(payrollExpensesIncludingB56) || isNaN(revenueData)) {
+        console.error("Invalid data for chart rendering:", { payrollExpensesIncludingB56, revenueData });
+        return; // Abort rendering
+      }
+
+      // Calculate percentage
+      var payrollPercentage = ((payrollExpensesIncludingB56 / revenueData) * 100).toFixed(2);
+      var remainingPercentage = (100 - payrollPercentage).toFixed(2);
+
+      // Destroy the previous chart if it exists
+      if (chart) {
+        chart.destroy();
+      }
+
+      // Render the chart
+      var options = {
+        series: [parseFloat(payrollPercentage), parseFloat(remainingPercentage)],
+        chart: {
+          type: 'pie',
+          height: 400
+        },
+        labels: ['Payroll Expenses INon Payroll (%)', 'Remaining Revenue (%)'],
+        colors: ['#7638ff', '#ff737b'], // Custom colors for the slices
+        title: {
+          text: 'Payroll Expenses Including No Payroll as % of Revenue',
+          align: 'center'
+        },
+        legend: {
+          position: 'bottom', // Position the legend at the bottom
+          labels: {
+            colors: '#333', // Optional: Customize legend label colors
+          },
+        },
+        responsive: [{
+          breakpoint: 480,
+          options: {
+            chart: {
+              width: '100%'
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }]
+      };
+
+      chart = new ApexCharts(document.querySelector("#exp-chart"), options);
+      chart.render();
+    }
+
+    // Optional: Update the chart and header when the month is changed from the dropdown
+    $('#monthSelector3').change(function () {
+      var selectedMonth = $(this).val();
+      var index = months.indexOf(selectedMonth);
+      if (index > -1) {
+        var revenueData = revenues[index];
+        var payrollData = totalPayrollExpensesIncludingB56[index];
+        var employeeCount = employeeCounts[index];
+        updateHeader(employeeCount, payrollData); // Update the header
+        renderPieChart(payrollData, revenueData); // Update the chart
+      }
+    });
+
+  }).getPayrollExpensesVsRevenueData(); // Call the Apps Script function to fetch data
+});
 

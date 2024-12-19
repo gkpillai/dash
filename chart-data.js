@@ -340,225 +340,227 @@ sortedMonths.forEach(month => {
 
 // Bar Chart for Employee Count
 
-
-
-// Bar Chart of Gross Earnings
-
 $(document).ready(function () {
-  // Call the server-side function to get the chart data
   google.script.run.withSuccessHandler(function (response) {
     if (!response || response.length === 0) {
       console.error("No data received or empty response.");
       return;
     }
 
-    // response contains the chart data in the format { department, earnings, months }
     const allDepartments = response.map(item => item.department);
-    const allMonths = response[0].months; // Assuming all departments have the same months
-    let currentChart; // Hold the chart instance for updates
+    const allMonths = response[0].months;
+    let currentChart;
 
-    // Create dropdowns for department and month selection
-    const departmentDropdown = $('<select id="department1-select" class="dropdown">').append('<option value="all">All Departments</option>');
+    const monthColors = [
+      '#7638ff', '#ff737b', '#fda600', '#1ec1b0', '#8e44ad', '#3498db', 
+      '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#34495e', '#1abc9c'
+    ];
+
+    const departmentDropdown = $('<select id="department2-select" class="dropdown">').append('<option value="all">All Departments</option>');
     allDepartments.forEach((department) => {
       departmentDropdown.append(`<option value="${department}">${department}</option>`);
     });
 
-    const monthDropdown = $('<select id="month1-select" class="dropdown">').append('<option value="all">All Months</option>');
+    const monthDropdown = $('<select id="month2-select" class="dropdown">').append('<option value="all">All Months</option>');
     allMonths.forEach((month) => {
       monthDropdown.append(`<option value="${month}">${month}</option>`);
     });
 
-    // Clear any existing content in the controls container
-    $('#controls1').empty();
-
-    // Append dropdowns to controls container
-    $('#controls1')
-      .append('<div class="dropdown-container"><label for="department1-select">Department:</label></div>')
+    $('#controls2').empty();
+    $('#controls2')
+      .append('<div class="dropdown-container"><label for="department2-select">Department:</label></div>')
       .append(departmentDropdown)
-      .append('<div class="dropdown-container"><label for="month1-select">Month:</label></div>')
+      .append('<div class="dropdown-container"><label for="month2-select">Month:</label></div>')
       .append(monthDropdown);
 
-    // Function to render the chart
- const renderChart = (selectedDepartment, selectedMonth) => {
-  let seriesData = [];
-  let categories = [];
-  let yAxisMax = 0; // Variable to dynamically set the Y-axis maximum value
-  let totalEarnings = 0; // To track total earnings for a specific month or department
+    const renderChart = (selectedDepartment, selectedMonth) => {
+      let seriesData = [];
+      let categories = [];
+      let yAxisMax = 0;
+      let totalEmployeeCount = 0;
 
-  if (selectedDepartment === "all" && selectedMonth === "all") {
-    // Case: All departments and all months
-    categories = allDepartments;
+      // Trend line data array (This is where we calculate the trend line)
+      let trendData = [];
 
-    allMonths.forEach((month) => {
-      const monthData = [];
-      allDepartments.forEach((department) => {
-        const departmentData = response.find((item) => item.department === department);
-        const monthIndex = departmentData.months.indexOf(month);
-        const earnings = departmentData.earnings[monthIndex] || 0;
-        monthData.push(earnings);
-        totalEarnings += earnings; // Add to total earnings
-      });
+      if (selectedDepartment === "all" && selectedMonth === "all") {
+        categories = allDepartments;
 
-      seriesData.push({
-        name: month,
-        type: "bar",
-        data: monthData,
-      });
+        allMonths.forEach((month, index) => {
+          const monthData = [];
+          allDepartments.forEach((department) => {
+            const departmentData = response.find(item => item.department === department);
+            const monthIndex = departmentData.months.indexOf(month);
+            monthData.push(departmentData.employeeCount[monthIndex] || 0);
+          });
 
-      // Track the max earnings to set Y-axis limit
-      const monthMax = Math.max(...monthData);
-      yAxisMax = Math.max(yAxisMax, monthMax);
-    });
-  } else if (selectedMonth === "all") {
-    // Case: All months for a specific department
-    categories = allMonths; // Set categories to allMonths
+          seriesData.push({
+            name: month,
+            type: "bar",
+            data: monthData,
+            color: monthColors[index % monthColors.length],
+            dataLabels: { enabled: false }
+          });
 
-    const departmentData = response.find((item) => item.department === selectedDepartment);
-    const data = allMonths.map((month) => {
-      const monthIndex = departmentData.months.indexOf(month);
-      const earnings = departmentData.earnings[monthIndex] || 0;
-      totalEarnings += earnings; // Add to total earnings
-      return earnings;
-    });
+          yAxisMax = Math.max(yAxisMax, ...monthData);
+          trendData.push(monthData.reduce((a, b) => a + b, 0) / monthData.length); // Average for trend line
+        });
+      } else if (selectedMonth === "all") {
+        categories = allMonths;
 
-    seriesData.push({
-      name: selectedDepartment,
-      type: "bar",
-      data: data,
-    });
+        const departmentData = response.find(item => item.department === selectedDepartment);
+        const data = allMonths.map(month => {
+          const monthIndex = departmentData.months.indexOf(month);
+          return departmentData.employeeCount[monthIndex] || 0;
+        });
 
-    // Track the max earnings to set Y-axis limit
-    yAxisMax = Math.max(...data);
-  } else {
-    // Case: Specific department and specific month
-    categories = allDepartments;
+        seriesData.push({
+          name: selectedDepartment,
+          type: "bar",
+          data: data,
+          color: '#33FF57',
+          dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+              return val; // Show exact value above the bar
+            },
+            style: {
+              fontSize: '12px',
+              fontWeight: 'bold',
+              colors: ['#000']
+            },
+            offsetY: -10
+          }
+        });
 
-    const data = allDepartments.map((department) => {
-      const departmentData = response.find((item) => item.department === department);
-      const monthIndex = departmentData.months.indexOf(selectedMonth);
-      const earnings = departmentData.earnings[monthIndex] || 0;
-      totalEarnings += earnings; // Add to total earnings
-      return earnings;
-    });
+        yAxisMax = Math.max(...data);
+        trendData = data; // Use data as trend line for single department
+      } else {
+        categories = allDepartments;
 
-    seriesData.push({
-      name: selectedMonth,
-      type: "bar",
-      data: data,
-    });
+        const data = allDepartments.map(department => {
+          const departmentData = response.find(item => item.department === department);
+          const monthIndex = departmentData.months.indexOf(selectedMonth);
+          return departmentData.employeeCount[monthIndex] || 0;
+        });
 
-    // Track the max earnings to set Y-axis limit
-    yAxisMax = Math.max(...data);
-  }
+        seriesData.push({
+          name: selectedMonth,
+          type: "bar",
+          data: data,
+          color: monthColors[allMonths.indexOf(selectedMonth) % monthColors.length],
+          dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+              return val; // Show exact value above the bar
+            },
+            style: {
+              fontSize: '12px',
+              fontWeight: 'bold',
+              colors: ['#000']
+            },
+            offsetY: -10
+          }
+        });
 
-  // Chart configuration
-  const chartConfig = {
-    series: seriesData,
-    chart: {
-      type: "bar",
-      height: 400,
-      width: "100%",
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "80%",
-      },
-    },
-    dataLabels: {
-      enabled: false, // Enable data labels to show earnings above bars
-      formatter: function (val) {
-        return Math.round(val); // Round the values for display
-      },
-      style: {
-        fontSize: "12px",
-        fontWeight: "bold",
-        colors: ["#000"],
-      },
-      offsetY: -10, // Position the data labels above the bars
-    },
-    xaxis: {
-      categories: categories,
-      labels: {
-        rotate: -45,
-        style: {
-          fontSize: "10px",
-          fontWeight: "normal",
-          fontFamily: "Helvetica, Arial, sans-serif",
-        },
-      },
-    },
-    yaxis: {
-      title: {
-        text: "Gross Earnings",
-      },
-      max: yAxisMax * 1.2, // Set Y-axis dynamically, a bit above the max earnings
-      min: 0,
-      labels: {
-        formatter: function (value) {
-          return Math.round(value); // Round the Y-axis values
-        },
-      },
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return Math.round(val); // Round the tooltip value
-        },
-      },
-    },
-  };
-
-  // Destroy the previous chart if it exists
-  if (currentChart) {
-    currentChart.destroy();
-  }
-
-  // Render the new chart
-  currentChart = new ApexCharts(document.querySelector("#pay-chart"), chartConfig);
-  currentChart.render();
-
-  // Show the total earnings above the chart
-  if (selectedMonth !== "all") {
-    $('#total-earnings').text(`Total Payroll in ${selectedMonth}: ${Math.round(totalEarnings)}`);
-  } else {
-    $('#total-earnings').text(`Total Payroll: ${Math.round(totalEarnings)}`);
-  }
-};
-
-    // Render the default chart: All departments and all months (default behavior)
-    renderChart("all", "all");
-
-    // Update the chart when the department is changed
-    $("#department1-select").change(function () {
-      const selectedDepartment = $("#department1-select").val();
-      const selectedMonth = $("#month1-select").val();
-
-      if (selectedDepartment !== "all") {
-        // Reset the month dropdown to "All Months" when a department is selected
-        $("#month1-select").val("all");
+        totalEmployeeCount = data.reduce((sum, value) => sum + value, 0);
+        yAxisMax = Math.max(...data);
+        trendData = data; // Use data as trend line for single month
       }
 
-      // Render the chart based on the selected department and month
-      renderChart(selectedDepartment, selectedMonth);
-    });
+      // Add a line series for the trend line
+      seriesData.push({
+        name: 'Trend Line',
+        type: "line",
+        data: trendData,
+        color: '#FF6347', // Red color for the trend line
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: 'smooth' }
+      });
 
-    // Update the chart when the month is changed
-    $("#month1-select").change(function () {
-      const selectedMonth = $("#month1-select").val();
-      const selectedDepartment = $("#department1-select").val();
+      const chartConfig = {
+        series: seriesData,
+        chart: {
+          type: "line",
+          height: 400,
+          width: "100%"
+        },
+        plotOptions: {
+          bar: {
+            horizontal: false,
+            columnWidth: "70%"
+          }
+        },
+        dataLabels: {
+          enabled: false // Default to no labels unless specified in series
+        },
+        xaxis: {
+          categories: categories,
+          labels: {
+            rotate: -90,
+            style: {
+              fontSize: "10px",
+              fontWeight: "normal",
+              fontFamily: "Helvetica, Arial, sans-serif"
+            }
+          }
+        },
+        yaxis: {
+          max: yAxisMax * 1.2, // Dynamically set the maximum value
+          min: 0, // Start at 0
+          tickAmount: 15, // Ensure intervals are evenly spaced and rounded
+          labels: {
+            formatter: function (value) {
+              return Math.round(value); // Return whole numbers
+            }
+          }
+        },
+        tooltip: {
+          y: {
+            formatter: function (val) {
+              return val; // Show exact value in tooltip
+            }
+          }
+        }
+      };
+
+      if (currentChart) {
+        currentChart.destroy();
+      }
+
+      currentChart = new ApexCharts(document.querySelector("#count-chart"), chartConfig);
+      currentChart.render();
 
       if (selectedMonth !== "all") {
-        // Reset the department dropdown to "All Departments" when a month is selected
-        $("#department1-select").val("all");
+        $('#total-employee-count').text(`Total Employees in ${selectedMonth}: ${totalEmployeeCount}`);
+      } else {
+        $('#total-employee-count').text('');
       }
+    };
 
-      // Render the chart based on the selected department and month
+    renderChart("all", "all");
+
+    $("#department2-select").change(function () {
+      const selectedDepartment = $(this).val();
+      const selectedMonth = $("#month2-select").val();
+      if (selectedDepartment !== "all") {
+        $("#month2-select").val("all");
+      }
       renderChart(selectedDepartment, selectedMonth);
     });
 
-  }).getGrossEarningData(); // Trigger the backend function
+    $("#month2-select").change(function () {
+      const selectedMonth = $(this).val();
+      const selectedDepartment = $("#department2-select").val();
+      if (selectedMonth !== "all") {
+        $("#department2-select").val("all");
+      }
+      renderChart(selectedDepartment, selectedMonth);
+    });
+  }).getEmployeeCountData();
 });
+
+// Bar Chart of Gross Earnings
+
 
 
 

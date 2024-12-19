@@ -1,4 +1,131 @@
 'use strict';
+// Trenline
+
+
+$(document).ready(function () {
+  // Fetch data from Apps Script
+  google.script.run.withSuccessHandler(function (data) {
+    console.log("Received data:", data); // Log data for debugging
+    createTrendlineChart(data); // Pass data to the chart function
+  }).getPayrollExpensesVsRevenueData();
+});
+
+function roundData(data) {
+  return data.map(item => Math.round(item));
+}
+
+function createTrendlineChart(data) {
+  if (!data || !data.months || !data.revenues || !data.payrollExpenses || !data.employeeCounts) {
+    console.error("Invalid data structure:", data);
+    return;
+  }
+
+  // Round all the data values to make them cleaner and more readable
+  data.revenues = roundData(data.revenues);
+  data.payrollExpenses = roundData(data.payrollExpenses);
+  data.totalGrossEarnings = roundData(data.totalGrossEarnings);
+  data.totalPayrollExpensesIncludingB56 = roundData(data.totalPayrollExpensesIncludingB56);
+  data.employeeCounts = roundData(data.employeeCounts);
+
+  // Define the series based on the rounded data
+  var options = {
+    chart: {
+      type: 'line',
+      height: '500px',
+      width: '100%',
+    },
+    series: [
+      {
+        name: 'Revenue',
+        data: data.revenues, // Revenue for each month
+        yAxis: 4, // Use the first y-axis
+      },
+      {
+        name: 'Non Payroll Expenses',
+        data: data.payrollExpenses, // Non Payroll Expenses for each month
+        yAxis: 3, // Use the second y-axis
+      },
+      {
+        name: 'Total Gross Earnings',
+        data: data.totalGrossEarnings, // Total Gross Earnings for each month
+        yAxis: 2, // Use the third y-axis
+      },
+      {
+        name: 'Total Payroll Expenses (incl. B56)',
+        data: data.totalPayrollExpensesIncludingB56, // Total Payroll Expenses including B56 for each month
+        yAxis: 1, // Use the fourth y-axis
+      },
+      {
+        name: 'Employee Count',
+        data: data.employeeCounts, // Employee counts for each month
+        yAxis: 0, // Use the fifth y-axis
+      },
+    ],
+    xaxis: {
+      categories: data.months, // Months as x-axis categories
+      title: {
+        text: 'Months',
+      },
+    },
+    yaxis: [
+      {
+        labels: {
+          show: false, // Hide this y-axis labels
+        },
+        opposite: false,
+      },
+      {
+        labels: {
+          show: false, // Hide this y-axis labels
+        },
+        opposite: true, // Place on the right side
+      },
+      {
+        labels: {
+          show: false, // Hide this y-axis labels
+        },
+        opposite: false,
+      },
+      {
+        labels: {
+          show: false, // Hide this y-axis labels
+        },
+        opposite: true, // Place on the right side
+      },
+      {
+        labels: {
+          show: false, // Hide this y-axis labels
+        },
+        opposite: false,
+      },
+    ],
+    title: {
+      text: 'Trendline of Current Financial Year',
+      align: 'center',
+    },
+    legend: {
+      position: 'bottom',
+      itemMargin: { horizontal: 5, vertical: 5 }, // Add some margin between legend items
+    },
+    tooltip: {
+      shared: true, // Show all series in the tooltip
+      intersect: false,
+    },
+    stroke: {
+      curve: 'smooth', // Make the trendlines smooth
+    },
+    markers: {
+      size: 4, // Adjust the marker size to make it more visible
+    },
+    grid: {
+      borderColor: '#f1f1f1',
+    },
+  };
+
+  // Render the chart
+  var chart = new ApexCharts(document.querySelector("#trendline-chart"), options);
+  chart.render();
+}
 
 
 // Bar Chart Workforce Percentage
@@ -213,209 +340,7 @@ sortedMonths.forEach(month => {
 
 // Bar Chart for Employee Count
 
-$(document).ready(function () {
-  google.script.run.withSuccessHandler(function (response) {
-    if (!response || response.length === 0) {
-      console.error("No data received or empty response.");
-      return;
-    }
 
-    const allDepartments = response.map(item => item.department);
-    const allMonths = response[0].months;
-    let currentChart;
-
-    const monthColors = [
-      '#7638ff', '#ff737b', '#fda600', '#1ec1b0', '#8e44ad', '#3498db', 
-      '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#34495e', '#1abc9c'
-    ];
-
-    const departmentDropdown = $('<select id="department2-select" class="dropdown">').append('<option value="all">All Departments</option>');
-    allDepartments.forEach((department) => {
-      departmentDropdown.append(`<option value="${department}">${department}</option>`);
-    });
-
-    const monthDropdown = $('<select id="month2-select" class="dropdown">').append('<option value="all">All Months</option>');
-    allMonths.forEach((month) => {
-      monthDropdown.append(`<option value="${month}">${month}</option>`);
-    });
-
-    $('#controls2').empty();
-    $('#controls2')
-      .append('<div class="dropdown-container"><label for="department2-select">Department:</label></div>')
-      .append(departmentDropdown)
-      .append('<div class="dropdown-container"><label for="month2-select">Month:</label></div>')
-      .append(monthDropdown);
-
-    const renderChart = (selectedDepartment, selectedMonth) => {
-      let seriesData = [];
-      let categories = [];
-      let yAxisMax = 0;
-      let totalEmployeeCount = 0;
-
-      if (selectedDepartment === "all" && selectedMonth === "all") {
-        categories = allDepartments;
-
-        allMonths.forEach((month, index) => {
-          const monthData = [];
-          allDepartments.forEach((department) => {
-            const departmentData = response.find(item => item.department === department);
-            const monthIndex = departmentData.months.indexOf(month);
-            monthData.push(departmentData.employeeCount[monthIndex] || 0);
-          });
-
-          seriesData.push({
-            name: month,
-            type: "bar",
-            data: monthData,
-            color: monthColors[index % monthColors.length],
-            dataLabels: { enabled: false }
-          });
-
-          yAxisMax = Math.max(yAxisMax, ...monthData);
-        });
-      } else if (selectedMonth === "all") {
-        categories = allMonths;
-
-        const departmentData = response.find(item => item.department === selectedDepartment);
-        const data = allMonths.map(month => {
-          const monthIndex = departmentData.months.indexOf(month);
-          return departmentData.employeeCount[monthIndex] || 0;
-        });
-
-        seriesData.push({
-          name: selectedDepartment,
-          type: "bar",
-          data: data,
-          color: '#33FF57',
-          dataLabels: {
-            enabled: true,
-            formatter: function (val) {
-              return val; // Show exact value above the bar
-            },
-            style: {
-              fontSize: '12px',
-              fontWeight: 'bold',
-              colors: ['#000']
-            },
-            offsetY: -10
-          }
-        });
-
-        yAxisMax = Math.max(...data);
-      } else {
-        categories = allDepartments;
-
-        const data = allDepartments.map(department => {
-          const departmentData = response.find(item => item.department === department);
-          const monthIndex = departmentData.months.indexOf(selectedMonth);
-          return departmentData.employeeCount[monthIndex] || 0;
-        });
-
-        seriesData.push({
-          name: selectedMonth,
-          type: "bar",
-          data: data,
-          color: monthColors[allMonths.indexOf(selectedMonth) % monthColors.length],
-          dataLabels: {
-            enabled: true,
-            formatter: function (val) {
-              return val; // Show exact value above the bar
-            },
-            style: {
-              fontSize: '12px',
-              fontWeight: 'bold',
-              colors: ['#000']
-            },
-            offsetY: -10
-          }
-        });
-
-        totalEmployeeCount = data.reduce((sum, value) => sum + value, 0);
-        yAxisMax = Math.max(...data);
-      }
-
-      const chartConfig = {
-        series: seriesData,
-        chart: {
-          type: "bar",
-          height: 400,
-          width: "100%"
-        },
-        plotOptions: {
-          bar: {
-            horizontal: false,
-            columnWidth: "70%"
-          }
-        },
-        dataLabels: {
-          enabled: false // Default to no labels unless specified in series
-        },
-        xaxis: {
-          categories: categories,
-          labels: {
-            rotate: -90,
-            style: {
-              fontSize: "10px",
-              fontWeight: "normal",
-              fontFamily: "Helvetica, Arial, sans-serif"
-            }
-          }
-        },
-yaxis: {
-  max: yAxisMax * 1.2, // Dynamically set the maximum value
-  min: 0, // Start at 0
-  tickAmount: 15, // Ensure intervals are evenly spaced and rounded
-  labels: {
-    formatter: function (value) {
-      return Math.round(value); // Return whole numbers
-    }
-  }
-},
-
-        tooltip: {
-          y: {
-            formatter: function (val) {
-              return val; // Show exact value in tooltip
-            }
-          }
-        }
-      };
-
-      if (currentChart) {
-        currentChart.destroy();
-      }
-
-      currentChart = new ApexCharts(document.querySelector("#count-chart"), chartConfig);
-      currentChart.render();
-
-      if (selectedMonth !== "all") {
-        $('#total-employee-count').text(`Total Employees in ${selectedMonth}: ${totalEmployeeCount}`);
-      } else {
-        $('#total-employee-count').text('');
-      }
-    };
-
-    renderChart("all", "all");
-
-    $("#department2-select").change(function () {
-      const selectedDepartment = $(this).val();
-      const selectedMonth = $("#month2-select").val();
-      if (selectedDepartment !== "all") {
-        $("#month2-select").val("all");
-      }
-      renderChart(selectedDepartment, selectedMonth);
-    });
-
-    $("#month2-select").change(function () {
-      const selectedMonth = $(this).val();
-      const selectedDepartment = $("#department2-select").val();
-      if (selectedMonth !== "all") {
-        $("#department2-select").val("all");
-      }
-      renderChart(selectedDepartment, selectedMonth);
-    });
-  }).getEmployeeCountData();
-});
 
 // Bar Chart of Gross Earnings
 

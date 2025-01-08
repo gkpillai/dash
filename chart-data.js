@@ -593,8 +593,8 @@ $(document).ready(function () {
   google.script.run.withSuccessHandler(function (data) {
     console.log("Received data:", data);
 
-    var months = data.months;
-    var expenseData = data.expenses;
+    var months = data.months;  // Array of months (ensure they are sorted in the desired order in code.gs)
+    var expenseData = data.expenses;  // Array of expenses corresponding to the months
 
     if (months.length > 0) {
       // Populate the month dropdown with formatted months
@@ -620,31 +620,27 @@ $(document).ready(function () {
   }).getMonthlyExpenseData(); // Call the Apps Script function
 });
 
-      // Function to display expenses in a table format
-      function displayExpenses(expenseData, selectedMonth) {
-        var expenses = expenseData[selectedMonth];
-        if (!expenses) {
-          console.error("No data available for the selected month:", selectedMonth);
-          return;
-        }
+function displayExpenses(expenseData, selectedMonth) {
+  // Assuming expenseData is an object with month keys and corresponding expense arrays
+  var monthExpenses = expenseData[selectedMonth];
+  
+  // Clear the previous expenses display
+  $('#expenseTable tbody').empty();
 
-        // Update the table heading
-        $('#selectedMonth').text(`Expense Details for ${selectedMonth}`);
-
-        // Populate the table
-        var tableBody = $('#expenseTable tbody');
-        tableBody.empty(); // Clear existing data
-
-        for (var label in expenses) {
-          var value = expenses[label];
-          tableBody.append(`
-            <tr>
-              <td>${label}</td>
-              <td>${value}</td>
-            </tr>
-          `);
-        }
-      }
+  if (monthExpenses && monthExpenses.length > 0) {
+    monthExpenses.forEach(function (expense) {
+      // Assuming each expense object has properties like 'date', 'category', 'amount'
+      var row = '<tr>';
+      row += '<td>' + expense.date + '</td>';
+      row += '<td>' + expense.category + '</td>';
+      row += '<td>' + expense.amount + '</td>';
+      row += '</tr>';
+      $('#expenseTable tbody').append(row);
+    });
+  } else {
+    $('#expenseTable tbody').append('<tr><td colspan="3">No expenses for this month</td></tr>');
+  }
+}
 
 // Pie Chart for Payroll Expenses vs Revenue
 

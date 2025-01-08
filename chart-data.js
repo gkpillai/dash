@@ -589,58 +589,7 @@ $(document).ready(function () {
 
 // Expense Sheet
 
-$(document).ready(function () {
-  google.script.run.withSuccessHandler(function (data) {
-    console.log("Received data:", data);
 
-    var months = data.months;  // Array of months (ensure they are sorted in the desired order in code.gs)
-    var expenseData = data.expenses;  // Array of expenses corresponding to the months
-
-    if (months.length > 0) {
-      // Populate the month dropdown with formatted months
-      months.forEach(function (month) {
-        $('#monthSelector1').append(new Option(month, month)); // Use month as both value and text
-      });
-
-      // Set the default selection to the last month
-      var selectedMonth = months[months.length - 1];
-      $('#monthSelector1').val(selectedMonth);
-
-      // Display expenses for the default selected month
-      displayExpenses(expenseData, selectedMonth);
-    } else {
-      console.error("No months available to display.");
-    }
-
-    // Change event for updating the table when a new month is selected
-    $('#monthSelector1').change(function () {
-      var selectedMonth = $(this).val();
-      displayExpenses(expenseData, selectedMonth);
-    });
-  }).getMonthlyExpenseData(); // Call the Apps Script function
-});
-
-function displayExpenses(expenseData, selectedMonth) {
-  // Assuming expenseData is an object with month keys and corresponding expense arrays
-  var monthExpenses = expenseData[selectedMonth];
-  
-  // Clear the previous expenses display
-  $('#expenseTable tbody').empty();
-
-  if (monthExpenses && monthExpenses.length > 0) {
-    monthExpenses.forEach(function (expense) {
-      // Assuming each expense object has properties like 'date', 'category', 'amount'
-      var row = '<tr>';
-      row += '<td>' + expense.date + '</td>';
-      row += '<td>' + expense.category + '</td>';
-      row += '<td>' + expense.amount + '</td>';
-      row += '</tr>';
-      $('#expenseTable tbody').append(row);
-    });
-  } else {
-    $('#expenseTable tbody').append('<tr><td colspan="3">No expenses for this month</td></tr>');
-  }
-}
 
 // Pie Chart for Payroll Expenses vs Revenue
 

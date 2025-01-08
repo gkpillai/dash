@@ -1,4 +1,70 @@
 'use strict';
+//Expenses
+
+$(document).ready(function () {
+      // Call the Apps Script function to get monthly expense data
+      google.script.run.withSuccessHandler(function (data) {
+        console.log("Received data:", data);
+
+        var months = data.months;         // Array of months (e.g., ["Apr-24", "May-24", ...])
+        var expenseData = data.expenses;  // Expense data object mapping months to their respective labels and values
+
+        if (months.length > 0) {
+          // Populate the month dropdown with months in the exact order received
+          months.forEach(function (month) {
+            $('#monthSelector1').append(new Option(month, month)); // Use month as both value and text
+          });
+
+          // Set the default selection to the last month (as per your code logic)
+          var selectedMonth = months[months.length - 1];
+          $('#monthSelector1').val(selectedMonth);
+
+          // Display expenses for the default selected month
+          displayExpenses(expenseData, selectedMonth);
+        } else {
+          console.error("No months available to display.");
+        }
+
+        // Change event for updating the table when a new month is selected
+        $('#monthSelector1').change(function () {
+          var selectedMonth = $(this).val();
+          displayExpenses(expenseData, selectedMonth);
+        });
+      }).getMonthlyExpenseData(); // Call the Apps Script function
+    });
+
+    // Function to display the expenses for a selected month without sorting
+    function displayExpenses(expenseData, selectedMonth) {
+      var expenseTableHTML = "<table border='1'><thead><tr><th>Non Payroll Expenses</th><th>Amount</th></tr></thead><tbody>";
+
+      // Get the data for the selected month (it comes in the same order as in Code.gs)
+      var selectedMonthData = expenseData[selectedMonth];
+      var totalSum = 0;
+
+      // If data exists for the selected month, populate the table
+      if (selectedMonthData) {
+        // Loop through the labels in the exact order received (no sorting applied)
+        Object.keys(selectedMonthData).forEach(function(label) {
+          var amount = selectedMonthData[label] || 0; // Default to 0 if no expense data
+
+          // Only add to the table if the amount is greater than zero
+          if (amount > 0) {
+            totalSum += amount; // Add to the total sum
+            expenseTableHTML += "<tr><td>" + label + "</td><td class='amount-cell'>" + amount.toFixed(2) + "</td></tr>";
+          }
+        });
+      } else {
+        expenseTableHTML += "<tr><td colspan='2'>No data available</td></tr>";
+      }
+
+      // Add the sum row at the end (show sum even if it's zero)
+      expenseTableHTML += "<tr><td><strong>Total</strong></td><td class='amount-cell'><strong>" + totalSum.toFixed(2) + "</strong></td></tr>";
+
+      expenseTableHTML += "</tbody></table>";
+      $('#expenseTable').html(expenseTableHTML); // Update the table content with the expenses
+    }
+
+
 // Trenline
 
 
